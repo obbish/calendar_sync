@@ -20,7 +20,7 @@ log "Fetching calendars..."
 tell application "Calendar"
     set targetCal to calendar targetCalendarName
     set sourceCalList to {}
-    
+
     -- Fetch each source calendar
     repeat with calName in sourceCalendars
         set end of sourceCalList to calendar calName
@@ -63,11 +63,11 @@ tell application "Calendar"
         set sourceEndDate to end date of sourceEvent
         set sourceLocation to location of sourceEvent
         set sourceNotes to description of sourceEvent
-        set sourcePrivacy to transparency of sourceEvent -- Check if the event is marked as Private
+        set sourcePrivacy to classification of sourceEvent -- Check if the event is marked as Private (using classification)
         set eventExistsInTarget to false
 
         -- Apply custom title for private events, otherwise sync the title normally
-        if sourcePrivacy is equal to "opaque" then -- Assuming 'opaque' indicates a private event
+        if sourcePrivacy is "private" then -- Assuming 'private' indicates a private event
             set targetSummary to privateEventTitle
         else if UseCustomTitle is true then
             set targetSummary to customTitle
