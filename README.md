@@ -80,4 +80,4 @@ All data is stored in `~/.calendarsync/`:
 
 ## License
 
-GPLv3 - for details see [LICENSE](LICENSE)
+**GPLv3** - for details see [LICENSE](LICENSE)
