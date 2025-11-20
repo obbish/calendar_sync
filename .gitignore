@@ -1,0 +1,9 @@
+.build/
+.DS_Store
+Packages/
+*.xcodeproj
+xcuserdata/
+calendar_state.json
+sync_log.json
+config.json
+backups/
