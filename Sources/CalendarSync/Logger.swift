@@ -2,15 +2,20 @@ import Foundation
 
 class Logger {
     static let shared = Logger()
-    private let logFile = "sync_log.json"
     private let fileManager = FileManager.default
     
+    private var logFileURL: URL {
+        let home = fileManager.homeDirectoryForCurrentUser
+        let dir = home.appendingPathComponent(".calendarsync")
+        try? fileManager.createDirectory(at: dir, withIntermediateDirectories: true)
+        return dir.appendingPathComponent("sync_log.json")
+    }
+    
     private init() {
-        // Create log file if it doesn't exist, or append to it?
-        // For structured JSON logs, it's often better to have one JSON object per line (JSONL)
-        // or a big array. JSONL is safer for appending.
-        if !fileManager.fileExists(atPath: logFile) {
-            fileManager.createFile(atPath: logFile, contents: nil)
+        // Create log file if it doesn't exist
+        let url = logFileURL
+        if !fileManager.fileExists(atPath: url.path) {
+            fileManager.createFile(atPath: url.path, contents: nil)
         }
     }
     
@@ -30,7 +35,7 @@ class Logger {
             if let jsonString = String(data: jsonData, encoding: .utf8) {
                 let line = jsonString + "\n"
                 if let data = line.data(using: .utf8) {
-                    if let fileHandle = FileHandle(forWritingAtPath: logFile) {
+                    if let fileHandle = try? FileHandle(forWritingTo: logFileURL) {
                         fileHandle.seekToEndOfFile()
                         fileHandle.write(data)
                         fileHandle.closeFile()
@@ -47,10 +52,11 @@ class Logger {
     
     func pruneLogs(olderThan date: Date) {
         // Read file, filter lines, rewrite file
-        guard fileManager.fileExists(atPath: logFile) else { return }
+        let url = logFileURL
+        guard fileManager.fileExists(atPath: url.path) else { return }
         
         do {
-            let content = try String(contentsOfFile: logFile, encoding: .utf8)
+            let content = try String(contentsOf: url, encoding: .utf8)
             let lines = content.components(separatedBy: .newlines)
             var keptLines: [String] = []
             let threshold = ISO8601DateFormatter().string(from: date)
@@ -70,7 +76,7 @@ class Logger {
             }
             
             let newContent = keptLines.joined(separator: "\n") + "\n"
-            try newContent.write(toFile: logFile, atomically: true, encoding: .utf8)
+            try newContent.write(to: url, atomically: true, encoding: .utf8)
             
         } catch {
             print("Failed to prune logs: \(error)")

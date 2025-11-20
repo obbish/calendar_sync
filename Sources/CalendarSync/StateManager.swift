@@ -1,10 +1,23 @@
 import Foundation
 
 class StateManager {
-    private let stateFile = "calendar_state.json"
-    private let backupDir = "backups"
-    private var state: SyncState
     private let fileManager = FileManager.default
+    private var state: SyncState
+    
+    private var baseDir: URL {
+        let home = fileManager.homeDirectoryForCurrentUser
+        let dir = home.appendingPathComponent(".calendarsync")
+        try? fileManager.createDirectory(at: dir, withIntermediateDirectories: true)
+        return dir
+    }
+    
+    private var stateFileURL: URL {
+        return baseDir.appendingPathComponent("calendar_state.json")
+    }
+    
+    private var backupDirURL: URL {
+        return baseDir.appendingPathComponent("backups")
+    }
     
     init() {
         self.state = SyncState(groups: [])
@@ -12,16 +25,17 @@ class StateManager {
     }
     
     private func load() {
-        if fileManager.fileExists(atPath: stateFile) {
+        let url = stateFileURL
+        if fileManager.fileExists(atPath: url.path) {
             do {
-                let data = try Data(contentsOf: URL(fileURLWithPath: stateFile))
+                let data = try Data(contentsOf: url)
                 state = try JSONDecoder().decode(SyncState.self, from: data)
                 Logger.shared.log("State loaded", details: ["groups": state.groups.count])
             } catch {
                 Logger.shared.log("Failed to load state", details: ["error": "\(error)"], level: "ERROR")
                 // Start fresh if load fails? Or backup corrupt file?
                 // For safety, let's backup the corrupt file if it exists
-                try? fileManager.copyItem(atPath: stateFile, toPath: "\(stateFile).corrupt.\(Date().timeIntervalSince1970)")
+                try? fileManager.copyItem(at: url, to: url.appendingPathExtension("corrupt.\(Date().timeIntervalSince1970)"))
                 state = SyncState(groups: [])
             }
         } else {
@@ -31,17 +45,18 @@ class StateManager {
     
     func save() {
         do {
+            let url = stateFileURL
             // Create backup first
-            if !fileManager.fileExists(atPath: backupDir) {
-                try fileManager.createDirectory(atPath: backupDir, withIntermediateDirectories: true)
+            if !fileManager.fileExists(atPath: backupDirURL.path) {
+                try fileManager.createDirectory(at: backupDirURL, withIntermediateDirectories: true)
             }
-            if fileManager.fileExists(atPath: stateFile) {
-                let backupPath = "\(backupDir)/state_backup_\(Int(Date().timeIntervalSince1970)).json"
-                try fileManager.copyItem(atPath: stateFile, toPath: backupPath)
+            if fileManager.fileExists(atPath: url.path) {
+                let backupPath = backupDirURL.appendingPathComponent("state_backup_\(Int(Date().timeIntervalSince1970)).json")
+                try fileManager.copyItem(at: url, to: backupPath)
             }
             
             let data = try JSONEncoder().encode(state)
-            try data.write(to: URL(fileURLWithPath: stateFile))
+            try data.write(to: url)
             Logger.shared.log("State saved")
         } catch {
             Logger.shared.log("Failed to save state", details: ["error": "\(error)"], level: "ERROR")

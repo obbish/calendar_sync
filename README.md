@@ -59,7 +59,7 @@ To run it as a scheduled job, you can use the built binary:
 
 ### Configuration
 
-The `config.json` file is simple:
+The tool uses a configuration file located at `~/.calendarsync/config.json`.
 
 ```json
 {
@@ -72,10 +72,12 @@ The `config.json` file is simple:
 
 ### Logs & State
 
+All data is stored in `~/.calendarsync/`:
+
 *   **`calendar_state.json`**: Stores the mapping between events across calendars. **Do not edit this manually.**
 *   **`sync_log.json`**: Structured JSON logs of all operations. Rotated automatically (logs > 1 month old are pruned).
 *   **`backups/`**: Automatic backups of the state file are kept here.
 
 ## License
 
-[License Information Here]
+GPLv3 - for details see [LICENSE](LICENSE)

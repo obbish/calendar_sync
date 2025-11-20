@@ -5,13 +5,20 @@ struct AppConfig: Codable {
 }
 
 class ConfigManager {
-    private let configFile = "config.json"
     private let fileManager = FileManager.default
     
+    private var configFileURL: URL {
+        let home = fileManager.homeDirectoryForCurrentUser
+        let dir = home.appendingPathComponent(".calendarsync")
+        try? fileManager.createDirectory(at: dir, withIntermediateDirectories: true)
+        return dir.appendingPathComponent("config.json")
+    }
+    
     func load() -> AppConfig? {
-        guard fileManager.fileExists(atPath: configFile) else { return nil }
+        let url = configFileURL
+        guard fileManager.fileExists(atPath: url.path) else { return nil }
         do {
-            let data = try Data(contentsOf: URL(fileURLWithPath: configFile))
+            let data = try Data(contentsOf: url)
             return try JSONDecoder().decode(AppConfig.self, from: data)
         } catch {
             Logger.shared.log("Failed to load config", details: ["error": "\(error)"], level: "ERROR")
@@ -22,8 +29,8 @@ class ConfigManager {
     func save(_ config: AppConfig) {
         do {
             let data = try JSONEncoder().encode(config)
-            try data.write(to: URL(fileURLWithPath: configFile))
-            Logger.shared.log("Config saved")
+            try data.write(to: configFileURL)
+            Logger.shared.log("Config saved", details: ["path": configFileURL.path])
         } catch {
             Logger.shared.log("Failed to save config", details: ["error": "\(error)"], level: "ERROR")
         }
